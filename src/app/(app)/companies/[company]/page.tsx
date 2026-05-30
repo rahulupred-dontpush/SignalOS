@@ -9,7 +9,26 @@ import { format } from "date-fns";
 import { useParams } from "next/navigation";
 import { GTMIntelligenceReport } from "@/lib/research-types";
 import { cn } from "@/lib/utils";
-import { MarketSignal, ResearchReport } from "@prisma/client";
+import type { ResearchReport } from "@prisma/client";
+interface MarketSignal {
+
+  id: string;
+
+  company: string;
+
+  type: string;
+
+  title: string;
+
+  source: string;
+
+  link: string;
+
+  confidence: number;
+
+  created_at: Date;
+
+}
 
 interface HistoricalReport extends Omit<ResearchReport, "report_json"> {
   report_json: GTMIntelligenceReport;
