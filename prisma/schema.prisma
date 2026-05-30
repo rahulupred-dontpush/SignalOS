@@ -1,0 +1,60 @@
+generator client {
+  provider = "prisma-client-js"
+  engineType = "library"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model ResearchReport {
+  id           String   @id @default(cuid())
+  company      String
+  report_json  Json
+  created_at   DateTime @default(now())
+
+  @@index([company])
+}
+
+model TrackedCompany {
+  id                String   @id @default(cuid())
+  name              String   @unique
+  industry          String?
+  description       String?
+  website           String?
+  size              String?
+  hq                String?
+  last_checked      DateTime?
+  monitoring_status String   @default("active") // active, paused
+  created_at        DateTime @default(now())
+}
+
+model MarketSignal {
+  id         String   @id @default(cuid())
+  company    String
+  type       String   // hiring, product, news, funding, expansion, partnership, leadership, social
+  title      String
+  source     String
+  link       String?
+  confidence String
+  created_at DateTime @default(now())
+
+  @@index([company])
+}
+
+model ResearchCache {
+  id           String   @id @default(cuid())
+  company      String   @unique
+  results_json Json
+  updated_at   DateTime @updatedAt
+}
+
+model Notification {
+  id         String   @id @default(cuid())
+  title      String
+  message    String
+  type       String   @default("info") // info, success, warning
+  reportId   String?  // Link to a specific research report
+  read       Boolean  @default(false)
+  created_at DateTime @default(now())
+}

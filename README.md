@@ -1,36 +1,55 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# SignalOS
+
+AI-native GTM Intelligence platform for revenue teams. Monitor competitors, market changes, hiring signals, and buying intent from an authenticated intelligence terminal.
+
+## Stack
+
+- Next.js 16 (App Router)
+- TypeScript
+- Tailwind CSS v4
+- Framer Motion
+- Recharts
+- cmdk (command palette)
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000). Sign in with any credentials (demo auth sets a session cookie).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Pages
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Route | Description |
+|-------|-------------|
+| `/login` | Authenticated access gate |
+| `/dashboard` | Intelligence dashboard with charts, AI insights, timeline |
+| `/research` | Research Agent — company intelligence briefs |
+| `/competitors` | Competitor threat matrix and movements |
+| `/signals` | Real-time signals feed with filters |
+| `/reports` | Intelligence report archive |
 
-## Learn More
+## Bright Data SERP (Research Agent)
 
-To learn more about Next.js, take a look at the following resources:
+Copy `env.example` to `.env.local` and add your credentials:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+cp env.example .env.local
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Variable | Description |
+|----------|-------------|
+| `BRIGHT_DATA_API_KEY` | API key from Bright Data zone overview |
+| `BRIGHT_DATA_SERP_ZONE` | SERP API zone name (e.g. `serp_api1`) |
+| `OPENAI_API_KEY` | OpenAI API key for GTM report synthesis |
+| `OPENAI_MODEL` | Optional model override (default: `gpt-4o-mini`) |
 
-## Deploy on Vercel
+The Research Agent calls `POST /api/research` which:
+1. Fetches four parallel Google searches via Bright Data
+2. Sends results to OpenAI for GTM intelligence synthesis
+3. Returns an actionable report (not raw SERP results)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Press `⌘K` (or `Ctrl+K`) from any authenticated page to open the command palette.
