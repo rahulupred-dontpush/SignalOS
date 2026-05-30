@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { researchCompany } from "@/services/brightdata";
 import { generateGTMReport } from "@/services/analysis";
 import { NextResponse } from "next/server";
+import { TrackedCompany } from "@prisma/client";
 
 export async function POST() {
   try {
@@ -11,7 +12,7 @@ export async function POST() {
 
     console.log(`[Monitoring] Starting cycle for ${trackedCompanies.length} companies...`);
 
-    const results = await Promise.all(trackedCompanies.map(async (company) => {
+    const results = await Promise.all(trackedCompanies.map(async (company: TrackedCompany) => {
       try {
         console.log(`[Monitoring] Checking ${company.name}...`);
         
@@ -73,7 +74,11 @@ export async function POST() {
         return { company: company.name, newSignals: allNewSignals.length, status: "success" };
       } catch (error) {
         console.error(`[Monitoring] Failed for ${company.name}:`, error);
-        return { company: company.name, status: "failed", error: (error as any).message };
+        return { 
+          company: company.name, 
+          status: "failed", 
+          error: error instanceof Error ? error.message : "Unknown error" 
+        };
       }
     }));
 

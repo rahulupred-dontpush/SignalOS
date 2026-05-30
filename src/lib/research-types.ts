@@ -71,6 +71,7 @@ export interface GTMIntelligenceReport {
       strength: "strong" | "moderate" | "emerging";
       source_title?: string;
       source_url?: string;
+      type?: string;
     }>;
     buying_intent: Array<{
       signal: string;

@@ -6,9 +6,18 @@ import { format } from "date-fns";
 import { GlassPanel } from "@/components/ui/glass-panel";
 import { SignalBadge } from "@/components/ui/signal-badge";
 import { useRouter } from "next/navigation";
+import { SignalType } from "@/lib/research-types";
+
+interface TimelineEvent {
+  id: string;
+  time: string;
+  type: SignalType;
+  company: string;
+  label: string;
+}
 
 export function SignalTimeline() {
-  const [events, setEvents] = useState<any[]>([]);
+  const [events, setEvents] = useState<TimelineEvent[]>([]);
   const router = useRouter();
 
   useEffect(() => {
@@ -16,10 +25,10 @@ export function SignalTimeline() {
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {
-          setEvents(data.slice(0, 6).map((s: any) => ({
+          setEvents(data.slice(0, 6).map((s) => ({
             id: s.id,
             time: format(new Date(s.created_at), "HH:mm"),
-            type: s.type,
+            type: s.type as SignalType,
             company: s.company,
             label: s.title
           })));

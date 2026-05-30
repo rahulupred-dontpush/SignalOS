@@ -1,5 +1,6 @@
 import type { ResearchItem, SerpResearchResults } from "@/lib/research-types";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 
 const BRIGHT_DATA_API_URL = "https://api.brightdata.com/request";
 const MAX_RESULTS = 10;
@@ -269,8 +270,8 @@ export async function researchCompany(company: string): Promise<SerpResearchResu
   // 2. Update Cache (Background)
   prisma.researchCache.upsert({
     where: { company: trimmed },
-    create: { company: trimmed, results_json: results as any },
-    update: { results_json: results as any, updated_at: new Date() }
+    create: { company: trimmed, results_json: results as unknown as Prisma.InputJsonValue },
+    update: { results_json: results as unknown as Prisma.InputJsonValue, updated_at: new Date() }
   }).catch(e => console.error("[Cache] Error updating cache:", e));
 
   return results;

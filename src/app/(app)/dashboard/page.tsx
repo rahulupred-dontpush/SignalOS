@@ -12,11 +12,34 @@ import { useEffect, useState } from "react";
 import { FileText, Radio, TrendingUp, Users } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
+import { MarketSignal, ResearchReport, TrackedCompany } from "@prisma/client";
+import { GTMIntelligenceReport } from "@/lib/research-types";
+
+interface HistoricalReport extends Omit<ResearchReport, "report_json"> {
+  report_json: GTMIntelligenceReport;
+}
+
+interface DashboardData {
+  signals: MarketSignal[];
+  reports: HistoricalReport[];
+  chartData: Array<{ day: string; intent: number; hiring: number; news: number }>;
+  intentChartData: Array<{ week: string; score: number }>;
+  currentScore: number;
+  stats: {
+    active_signals: number;
+    tracked_companies: number;
+    reports_generated: number;
+    avg_confidence: string;
+  };
+}
 
 export default function Dashboard() {
-  const [data, setData] = useState<any>({
+  const [data, setData] = useState<DashboardData>({
     signals: [],
     reports: [],
+    chartData: [],
+    intentChartData: [],
+    currentScore: 45,
     stats: {
       active_signals: 0,
       tracked_companies: 0,
@@ -31,22 +54,22 @@ export default function Dashboard() {
       fetch("/api/research/history").then(res => res.json()),
       fetch("/api/companies").then(res => res.json())
     ]).then(([signals, reports, companies]) => {
-      const signalsArray = Array.isArray(signals) ? signals : [];
-      const reportsArray = Array.isArray(reports) ? reports : [];
-      const companiesArray = Array.isArray(companies) ? companies : [];
+      const signalsArray = (Array.isArray(signals) ? signals : []) as MarketSignal[];
+      const reportsArray = (Array.isArray(reports) ? reports : []) as HistoricalReport[];
+      const companiesArray = (Array.isArray(companies) ? companies : []) as TrackedCompany[];
 
       // Process signals for chart
       const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
       const chartData = days.map(day => ({
         day,
-        intent: signalsArray.filter((s: any) => format(new Date(s.created_at), "EEE") === day && s.type === "intent").length * 5,
-        hiring: signalsArray.filter((s: any) => format(new Date(s.created_at), "EEE") === day && s.type === "hiring").length * 5,
-        news: signalsArray.filter((s: any) => format(new Date(s.created_at), "EEE") === day && s.type === "news").length * 5,
+        intent: signalsArray.filter((s) => format(new Date(s.created_at), "EEE") === day && s.type === "intent").length * 5,
+        hiring: signalsArray.filter((s) => format(new Date(s.created_at), "EEE") === day && s.type === "hiring").length * 5,
+        news: signalsArray.filter((s) => format(new Date(s.created_at), "EEE") === day && s.type === "news").length * 5,
       }));
 
       // Calculate intent index
       const totalSignals = signalsArray.length;
-      const intentSignals = signalsArray.filter((s: any) => s.type === "intent" || s.type === "hiring").length;
+      const intentSignals = signalsArray.filter((s) => s.type === "intent" || s.type === "hiring").length;
       const currentScore = totalSignals > 0 ? Math.min(100, Math.round((intentSignals / totalSignals) * 100 + 40)) : 45;
 
       const intentChartData = [
@@ -57,7 +80,7 @@ export default function Dashboard() {
       ];
 
       // Calculate avg confidence from reports
-      const totalConfidence = reportsArray.reduce((acc: number, curr: any) => {
+      const totalConfidence = reportsArray.reduce((acc: number, curr) => {
         const conf = curr.report_json?.market_signals?.confidence || "low";
         return acc + (conf === "high" ? 95 : conf === "medium" ? 75 : 45);
       }, 0);
@@ -155,7 +178,7 @@ export default function Dashboard() {
                   <h3 className="text-sm font-medium text-white">Latest Research Reports</h3>
                 </div>
                 <div className="divide-y divide-white/5">
-                  {data.reports.slice(0, 5).map((r: any) => (
+                  {data.reports.slice(0, 5).map((r) => (
                     <div key={r.id} className="p-4 hover:bg-white/[0.02] transition-colors">
                       <p className="text-sm font-medium text-white">{r.company}</p>
                       <p className="text-[10px] text-white/30 mt-1 uppercase">
@@ -178,7 +201,7 @@ export default function Dashboard() {
               </div>
               <div className="h-[600px] overflow-y-auto">
                 <div className="divide-y divide-white/5">
-                  {data.signals.map((s: any) => (
+                  {data.signals.map((s) => (
                     <div key={s.id} className="p-4 hover:bg-white/[0.02] transition-colors">
                       <div className="flex items-center gap-2 mb-2">
                         <span className="h-1.5 w-1.5 rounded-full bg-accent-cyan" />

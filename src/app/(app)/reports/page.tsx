@@ -13,28 +13,39 @@ import { AppShell } from "@/components/layout/app-shell";
 import { GlassPanel } from "@/components/ui/glass-panel";
 import { cn } from "@/lib/utils";
 
-const typeLabels = {
+import { LucideIcon } from "lucide-react";
+
+interface Report {
+  id: string;
+  title: string;
+  type: "weekly" | "competitive" | "market" | "account";
+  status: "ready" | "generating" | "draft";
+  createdAt: string;
+  pages: number;
+}
+
+const typeLabels: Record<Report["type"], { label: string; color: string }> = {
   weekly: { label: "Weekly Brief", color: "text-accent-cyan" },
   competitive: { label: "Competitive", color: "text-accent-violet" },
   market: { label: "Market", color: "text-accent-emerald" },
   account: { label: "Account", color: "text-accent-amber" },
-} as any;
+};
 
-const statusConfig = {
+const statusConfig: Record<Report["status"], { label: string; icon: LucideIcon; color: string }> = {
   ready: { label: "Ready", icon: FileText, color: "text-accent-emerald" },
   generating: { label: "Generating", icon: Loader2, color: "text-accent-cyan" },
   draft: { label: "Draft", icon: FileText, color: "text-muted" },
-} as any;
+};
 
 export default function ReportsPage() {
-  const [reports, setReports] = useState<any[]>([]);
+  const [reports, setReports] = useState<Report[]>([]);
 
   useEffect(() => {
     fetch("/api/research/history")
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {
-          setReports(data.map((r: any) => ({
+          setReports(data.map((r) => ({
             id: r.id,
             title: `${r.company} Strategic Synthesis`,
             type: "account",

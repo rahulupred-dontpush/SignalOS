@@ -3,6 +3,7 @@ import { researchCompany } from "@/services/brightdata";
 import { generateGTMReport } from "@/services/analysis";
 import { scrapeDeepSite } from "@/services/webscraper";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -60,7 +61,7 @@ export async function POST(request: Request) {
         const reportRecord = await prisma.researchReport.create({
           data: {
             company: report.company,
-            report_json: report as any,
+            report_json: report as unknown as Prisma.InputJsonValue,
           }
         });
 
@@ -91,7 +92,7 @@ export async function POST(request: Request) {
           ...report.product_activity.launches.map(l => ({ type: "product", title: l.title, source: l.source_title || "Search", link: l.source_url, confidence: report.product_activity.confidence })),
           ...(report.social_intelligence?.signals || []).map(s => ({ type: "social", title: s.insight, source: s.platform, link: s.url, confidence: "medium" })),
           ...report.market_signals.trends.map(t => ({ 
-            type: (t as any).type || "news", 
+            type: t.type || "news", 
             title: t.signal, 
             source: t.source_title || "Search", 
             link: t.source_url, 

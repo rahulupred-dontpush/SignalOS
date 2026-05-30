@@ -7,7 +7,19 @@ import { GlassPanel } from "@/components/ui/glass-panel";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 
-const impactConfig = {
+import { LucideIcon } from "lucide-react";
+
+interface Insight {
+  id: string;
+  title: string;
+  summary: string;
+  impact: "opportunity" | "risk" | "neutral";
+  company: string;
+  type: string;
+  confidence: number;
+}
+
+const impactConfig: Record<Insight["impact"], { icon: LucideIcon; color: string; border: string; bg: string }> = {
   opportunity: {
     icon: Lightbulb,
     color: "text-accent-emerald",
@@ -26,10 +38,10 @@ const impactConfig = {
     border: "border-accent-amber/20",
     bg: "bg-accent-amber/5",
   },
-} as any;
+};
 
 export function InsightsGrid() {
-  const [insights, setInsights] = useState<any[]>([]);
+  const [insights, setInsights] = useState<Insight[]>([]);
   const router = useRouter();
 
   useEffect(() => {
@@ -37,7 +49,7 @@ export function InsightsGrid() {
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {
-          setInsights(data.slice(0, 4).map((s: any) => ({
+          setInsights(data.slice(0, 4).map((s) => ({
             id: s.id,
             title: s.title,
             summary: `Detected via ${s.source}. Confidence level ${s.confidence}.`,

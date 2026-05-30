@@ -9,14 +9,22 @@ import { format } from "date-fns";
 import { useParams } from "next/navigation";
 import { GTMIntelligenceReport } from "@/lib/research-types";
 import { cn } from "@/lib/utils";
+import { MarketSignal, ResearchReport } from "@prisma/client";
+
+interface HistoricalReport extends Omit<ResearchReport, "report_json"> {
+  report_json: GTMIntelligenceReport;
+}
 
 export default function CompanyIntelligencePage() {
   const params = useParams();
   const companyName = decodeURIComponent(params.company as string);
   
   const [report, setReport] = useState<GTMIntelligenceReport | null>(null);
-  const [signals, setSignals] = useState<any[]>([]);
-  const [stats, setStats] = useState({ reportCount: 0, lastResearched: "" });
+  const [signals, setSignals] = useState<MarketSignal[]>([]);
+  const [stats, setStats] = useState<{ reportCount: number; lastResearched: string | Date }>({ 
+    reportCount: 0, 
+    lastResearched: "" 
+  });
   const [loading, setLoading] = useState(true);
   const [isResearching, setIsResearching] = useState(false);
 
@@ -31,13 +39,13 @@ export default function CompanyIntelligencePage() {
       const history = historyRes.ok ? await historyRes.json() : [];
       const allSignals = signalsRes.ok ? await signalsRes.json() : [];
       
-      const historyArray = Array.isArray(history) ? history : [];
-      const signalsArray = Array.isArray(allSignals) ? allSignals : [];
+      const historyArray = (Array.isArray(history) ? history : []) as HistoricalReport[];
+      const signalsArray = (Array.isArray(allSignals) ? allSignals : []) as MarketSignal[];
       
-      const companyReports = historyArray.filter((r: any) => 
+      const companyReports = historyArray.filter((r) => 
         r.company?.toLowerCase() === companyName.toLowerCase()
       );
-      const companySignals = signalsArray.filter((s: any) => 
+      const companySignals = signalsArray.filter((s) => 
         s.company?.toLowerCase() === companyName.toLowerCase()
       );
       
@@ -107,24 +115,24 @@ export default function CompanyIntelligencePage() {
               <div className="mt-2 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-white/40">
                 <div className="flex items-center gap-1.5">
                   <Globe className="h-4 w-4" />
-                  {(report as any)?.enrichment?.industry || "Enterprise Tech"}
+                  {report?.enrichment?.industry || "Enterprise Tech"}
                 </div>
                 <div className="flex items-center gap-1.5">
                   <Users className="h-4 w-4" />
-                  {(report as any)?.enrichment?.size || "10,000+ employees"}
+                  {report?.enrichment?.size || "10,000+ employees"}
                 </div>
                 <div className="flex items-center gap-1.5">
                   <Shield className="h-4 w-4" />
-                  {(report as any)?.enrichment?.hq || "Global Headquarters"}
+                  {report?.enrichment?.hq || "Global Headquarters"}
                 </div>
                 <div className="flex items-center gap-1.5">
                   <Clock className="h-4 w-4" />
                   Last Research: {stats.lastResearched ? format(new Date(stats.lastResearched), "MMM d, yyyy") : "Never"}
                 </div>
               </div>
-              { (report as any)?.enrichment?.description && (
+              { report?.enrichment?.description && (
                 <p className="mt-4 text-sm text-white/60 max-w-2xl leading-relaxed">
-                  {(report as any).enrichment.description}
+                  {report.enrichment.description}
                 </p>
               )}
             </div>
@@ -190,7 +198,7 @@ export default function CompanyIntelligencePage() {
                   )} />
                 </div>
                 <div className="mt-6 space-y-3">
-                  {(report.market_signals?.buying_intent || []).slice(0, 3).map((intent: any, idx: number) => (
+                  {(report.market_signals?.buying_intent || []).slice(0, 3).map((intent, idx: number) => (
                     <div key={idx} className="flex items-center justify-between text-xs">
                       <span className="text-white/40 truncate pr-2">{intent.signal}</span>
                       <span className={cn(

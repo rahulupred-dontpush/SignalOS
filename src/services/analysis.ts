@@ -1,8 +1,26 @@
-import type { GTMIntelligenceReport, SerpResearchResults, ConfidenceScore } from "@/lib/research-types";
+import type { GTMIntelligenceReport, SerpResearchResults, ConfidenceScore, ResearchItem } from "@/lib/research-types";
 import { WebScraperResults } from "./webscraper";
 
 const NVIDIA_NIM_API_URL = "https://integrate.api.nvidia.com/v1/chat/completions";
 const MODEL = "meta/llama-3.1-8b-instruct";
+
+interface RawLlmResponse {
+  company?: string;
+  enrichment?: { ind?: string; web?: string; hq?: string; size?: string; desc?: string };
+  exec?: string;
+  comp?: { sum?: string; list?: Array<{ n?: string; t?: "h" | "m" | "l"; a?: string; u?: string }> };
+  soc?: { sum?: string; sent?: "pos" | "neu" | "neg"; sig?: Array<{ p?: "li" | "rd" | "tw"; i?: string }> };
+  hire?: { sum?: string; sig?: Array<{ t?: string; i?: string; u?: "h" | "m" | "l" }> };
+  prod?: { sum?: string; launch?: Array<{ t?: string; i?: string; time?: string }> };
+  mkt?: {
+    sum?: string;
+    trend?: Array<{ s?: string; i?: string; type?: string }>;
+    intent?: Array<{ s?: string; e?: string; score?: "h" | "m" | "l" }>;
+  };
+  risk?: Array<{ t?: string; d?: string; s?: "h" | "m" | "l" }>;
+  opp?: Array<{ t?: string; d?: string; p?: "h" | "m" | "l" }>;
+  action?: Array<{ a?: string; p?: "imm" | "st" | "lt" }>;
+}
 
 const REPORT_SCHEMA = `{
   "company": "string",
@@ -34,8 +52,8 @@ function getApiKey(): string {
   return key;
 }
 
-function trimItems(items: any[], limit = 2) {
-  return (items ?? []).slice(0, limit).map(({ title, source, snippet, link }: any) => ({
+function trimItems(items: ResearchItem[], limit = 2) {
+  return (items ?? []).slice(0, limit).map(({ title, link, snippet }: ResearchItem) => ({
     t: (title ?? "").slice(0, 50),
     sn: (snippet ?? "").slice(0, 80),
     u: link
@@ -65,13 +83,10 @@ function isNonEmptyString(value: unknown): value is string {
 }
 
 function validateReport(data: unknown, company: string): GTMIntelligenceReport {
-  const raw = (data && typeof data === "object" ? data : {}) as any;
+  const raw = (data && typeof data === "object" ? data : {}) as RawLlmResponse;
 
-  const repairConfidence = (val: any): ConfidenceScore => 
-    ["high", "medium", "low"].includes(val) ? val : "low";
-
-  const repairList = (list: any[], repairItem: (item: any, index: number) => any) => 
-    Array.isArray(list) ? list.map((item, index) => repairItem(item, index)).filter(Boolean) : [];
+  const repairList = <T, R>(list: T[] | undefined, repairItem: (item: T, index: number) => R) => 
+    Array.isArray(list) ? list.map((item, index) => repairItem(item, index)).filter(Boolean) as R[] : [];
 
   return {
     company: raw.company || company,
@@ -135,7 +150,7 @@ function validateReport(data: unknown, company: string): GTMIntelligenceReport {
       trends: repairList(raw.mkt?.trend, (t, i) => ({
         signal: t.s || `Market Trend ${i + 1}`,
         implication: t.i || "No implication available.",
-        strength: "emerging",
+        strength: "emerging" as const,
         source_title: "Search",
         source_url: ""
       })),
@@ -163,7 +178,7 @@ function validateReport(data: unknown, company: string): GTMIntelligenceReport {
     })),
     recommended_actions: repairList(raw.action, (a) => ({
       action: a.a || "Recommended Action",
-      priority: "short-term",
+      priority: "short-term" as const,
       rationale: "Rationale unavailable."
     }))
   };
@@ -322,7 +337,8 @@ export async function generateGTMReport(
     return validateReport(parsed, serp.company);
   } catch (error) {
     if (retryCount < 1) {
-      console.warn(`[Synthesis] Attempting retry for ${serp.company} due to: ${(error as any).message}`);
+      const message = error instanceof Error ? error.message : "Unknown error";
+      console.warn(`[Synthesis] Attempting retry for ${serp.company} due to: ${message}`);
       return generateGTMReport(serp, scraper, retryCount + 1);
     }
     console.error("[generateGTMReport]", error);

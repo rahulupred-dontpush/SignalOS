@@ -7,14 +7,25 @@ import { GlassPanel } from "@/components/ui/glass-panel";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 
-const trendIcons = {
+import { LucideIcon } from "lucide-react";
+
+interface Competitor {
+  id: string;
+  name: string;
+  movement: string;
+  trend: "up" | "down" | "stable";
+  threatLevel: string;
+  lastMovement: string;
+}
+
+const trendIcons: Record<Competitor["trend"], LucideIcon> = {
   up: ArrowUp,
   down: ArrowDown,
   stable: Minus,
-} as any;
+};
 
 export function CompetitorFeed() {
-  const [feed, setFeed] = useState<any[]>([]);
+  const [feed, setFeed] = useState<Competitor[]>([]);
   const router = useRouter();
 
   useEffect(() => {
@@ -22,7 +33,7 @@ export function CompetitorFeed() {
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {
-          setFeed(data.slice(0, 4).map((c: any) => ({
+          setFeed(data.slice(0, 4).map((c) => ({
             id: c.id,
             name: c.name,
             movement: "Monitoring active",
