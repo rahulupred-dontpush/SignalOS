@@ -4,8 +4,9 @@ import { useEffect, useState } from "react";
 import { ResearchShell } from "@/components/research/research-shell";
 import { ResearchReportView } from "@/components/research/research-report";
 import { format } from "date-fns";
-import { Search, Clock, FileText } from "lucide-react";
+import { Search, Clock, FileText, ExternalLink } from "lucide-react";
 import { GTMIntelligenceReport } from "@/lib/research-types";
+import { useRouter } from "next/navigation";
 
 interface HistoricalReport {
   id: string;
@@ -19,6 +20,7 @@ export default function ResearchHistoryPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [selectedReport, setSelectedReport] = useState<GTMIntelligenceReport | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     fetch("/api/research/history")
@@ -83,26 +85,35 @@ export default function ResearchHistoryPage() {
         ) : (
           <div className="grid gap-3">
             {filtered.map((report) => (
-              <button
+              <div
                 key={report.id}
-                onClick={() => setSelectedReport(report.report_json)}
                 className="group flex items-center justify-between rounded-xl border border-white/5 bg-white/[0.02] p-4 text-left transition-all hover:border-white/10 hover:bg-white/[0.04]"
               >
-                <div>
-                  <h3 className="font-medium text-white group-hover:text-accent-cyan">
+                <button
+                  onClick={() => setSelectedReport(report.report_json)}
+                  className="flex-1 text-left"
+                >
+                  <h3 className="font-medium text-white group-hover:text-accent-cyan transition-colors">
                     {report.company}
                   </h3>
                   <p className="mt-1 text-xs text-white/30">
                     {format(new Date(report.created_at), "MMM d, yyyy · HH:mm")}
                   </p>
-                </div>
+                </button>
                 <div className="flex items-center gap-4 text-xs text-white/40">
                   <span className="rounded-full border border-white/5 bg-white/5 px-2 py-0.5">
                     {report.report_json.market_signals?.confidence || "low"} confidence
                   </span>
+                  <button
+                    onClick={() => router.push(`/companies/${encodeURIComponent(report.company)}`)}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 hover:text-white transition-colors"
+                    title="View Company Profile"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                  </button>
                   <FileText className="h-4 w-4" />
                 </div>
-              </button>
+              </div>
             ))}
           </div>
         )}

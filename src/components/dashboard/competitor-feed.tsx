@@ -5,6 +5,7 @@ import { ArrowDown, ArrowUp, Minus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { GlassPanel } from "@/components/ui/glass-panel";
 import { cn } from "@/lib/utils";
+import { useRouter } from "next/navigation";
 
 const trendIcons = {
   up: ArrowUp,
@@ -14,6 +15,7 @@ const trendIcons = {
 
 export function CompetitorFeed() {
   const [feed, setFeed] = useState<any[]>([]);
+  const router = useRouter();
 
   useEffect(() => {
     fetch("/api/companies")
@@ -47,14 +49,15 @@ export function CompetitorFeed() {
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.35 + i * 0.05 }}
-              className="flex items-start gap-3 rounded-lg border border-white/6 bg-white/[0.02] p-3 transition-colors hover:border-white/12"
+              onClick={() => router.push(`/companies/${encodeURIComponent(comp.name)}`)}
+              className="flex items-start gap-3 rounded-lg border border-white/6 bg-white/[0.02] p-3 transition-colors hover:border-white/12 cursor-pointer group"
             >
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent-violet/10 font-mono text-xs font-semibold text-accent-violet">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent-violet/10 font-mono text-xs font-semibold text-accent-violet group-hover:bg-accent-violet/20 transition-colors">
                 {comp.name.slice(0, 2).toUpperCase()}
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-2">
-                  <p className="text-sm font-medium">{comp.name}</p>
+                  <p className="text-sm font-medium group-hover:text-accent-cyan transition-colors">{comp.name}</p>
                   <span
                     className={cn(
                       "flex items-center gap-0.5 font-mono text-[10px]",

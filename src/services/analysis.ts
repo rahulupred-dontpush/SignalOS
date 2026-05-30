@@ -2,103 +2,31 @@ import type { GTMIntelligenceReport, SerpResearchResults, ConfidenceScore } from
 import { WebScraperResults } from "./webscraper";
 
 const NVIDIA_NIM_API_URL = "https://integrate.api.nvidia.com/v1/chat/completions";
-const MODEL = "meta/llama-3.1-70b-instruct";
+const MODEL = "meta/llama-3.1-8b-instruct";
 
 const REPORT_SCHEMA = `{
   "company": "string",
-  "enrichment": {
-    "industry": "string",
-    "website": "string",
-    "hq": "string",
-    "size": "string",
-    "description": "1-sentence overview"
+  "enrichment": { "ind": "string", "web": "string", "hq": "string", "size": "string", "desc": "string" },
+  "exec": "2-para summary",
+  "comp": { "sum": "string", "list": [{ "n": "string", "t": "h|m|l", "a": "string", "u": "string" }] },
+  "soc": { "sum": "string", "sent": "pos|neu|neg", "sig": [{ "p": "li|rd|tw", "i": "string" }] },
+  "hire": { "sum": "string", "sig": [{ "t": "string", "i": "string", "u": "h|m|l" }] },
+  "prod": { "sum": "string", "launch": [{ "t": "string", "i": "string", "time": "string" }] },
+  "mkt": {
+    "sum": "string",
+    "trend": [{ "s": "string", "i": "string" }],
+    "intent": [{ "s": "string", "e": "string", "score": "h|m|l" }]
   },
-  "executive_summary": "2-3 paragraph strategic overview for a GTM leader",
-  "competitor_landscape": {
-    "summary": "string",
-    "confidence": "high|medium|low",
-    "competitors": [{ 
-      "name": "string", 
-      "threat_level": "high|medium|low", 
-      "analysis": "string", 
-      "recent_moves": ["string"],
-      "source_title": "string",
-      "source_url": "string"
-    }]
-  },
-  "social_intelligence": {
-    "summary": "string",
-    "sentiment": "positive|neutral|negative",
-    "signals": [{ "platform": "linkedin|reddit|twitter", "insight": "string", "url": "string" }]
-  },
-  "hiring_activity": {
-    "summary": "string",
-    "confidence": "high|medium|low",
-    "signals": [{ 
-      "title": "string", 
-      "insight": "string", 
-      "urgency": "high|medium|low",
-      "source_title": "string",
-      "source_url": "string"
-    }]
-  },
-  "product_activity": {
-    "summary": "string",
-    "confidence": "high|medium|low",
-    "launches": [{ 
-      "title": "string", 
-      "impact": "string", 
-      "timing": "string",
-      "source_title": "string",
-      "source_url": "string"
-    }]
-  },
-  "market_signals": {
-    "summary": "string",
-    "confidence": "high|medium|low",
-    "trends": [{ 
-      "signal": "string", 
-      "implication": "string", 
-      "strength": "strong|moderate|emerging",
-      "source_title": "string",
-      "source_url": "string"
-    }],
-    "buying_intent": [{ 
-      "signal": "string", 
-      "evidence": "string", 
-      "score": "high|medium|low",
-      "source_title": "string",
-      "source_url": "string"
-    }]
-  },
-  "risks": [{ 
-    "title": "string", 
-    "description": "string", 
-    "severity": "high|medium|low",
-    "source_title": "string",
-    "source_url": "string"
-  }],
-  "opportunities": [{ 
-    "title": "string", 
-    "description": "string", 
-    "potential": "high|medium|low",
-    "source_title": "string",
-    "source_url": "string"
-  }],
-  "recommended_actions": [{ "action": "string", "priority": "immediate|short-term|long-term", "rationale": "string" }]
+  "risk": [{ "t": "string", "d": "string", "s": "h|m|l" }],
+  "opp": [{ "t": "string", "d": "string", "p": "h|m|l" }],
+  "action": [{ "a": "string", "p": "imm|st|lt" }]
 }`;
 
-const SYSTEM_PROMPT = `You are a world-class GTM strategist. Synthesize search data into a high-density strategic JSON report.
-CRITICAL INSTRUCTIONS:
-1. USE ONLY PROVIDED DATA. If data is sparse, set confidence to "low" and provide a brief, honest summary.
-2. ENRICHMENT: Extract industry, website, hq, size, and a 1-sentence description.
-3. INTENT: Look for hiring velocity, funding, and expansion as high-intent triggers.
-4. COMPETITORS: Identify direct threats and their recent strategic moves.
-5. SOCIAL: Summarize brand sentiment from LinkedIn/Reddit/Twitter mentions.
-6. FORMAT: Return ONLY valid JSON matching the schema exactly. Keep summaries concise.
-
-SCHEMA:
-${REPORT_SCHEMA}`;
+const SYSTEM_PROMPT = `GTM Strategist: JSON only.
+Data Enrichment: ind, web, hq, size, desc.
+Intent: hiring, funding, expansion.
+Social: brand sentiment.
+SCHEMA: ${REPORT_SCHEMA}`;
 
 function getApiKey(): string {
   const key = process.env.NVIDIA_API_KEY;
@@ -106,11 +34,10 @@ function getApiKey(): string {
   return key;
 }
 
-function trimItems(items: any[], limit = 5) {
+function trimItems(items: any[], limit = 2) {
   return (items ?? []).slice(0, limit).map(({ title, source, snippet, link }: any) => ({
-    t: (title ?? "").slice(0, 80),
-    s: (source ?? "").slice(0, 40),
-    sn: (snippet ?? "").slice(0, 120),
+    t: (title ?? "").slice(0, 50),
+    sn: (snippet ?? "").slice(0, 80),
     u: link
   }));
 }
@@ -118,16 +45,16 @@ function trimItems(items: any[], limit = 5) {
 function buildAnalysisPayload(serp: SerpResearchResults, scraper: WebScraperResults | null) {
   return {
     c: serp.company,
-    src: {
-      n: trimItems(serp.news),
-      comp: trimItems(serp.competitors),
-      h: trimItems(serp.hiring_signals),
-      p: trimItems(serp.product_signals),
-      soc: trimItems(serp.social_mentions, 8),
+    s: {
+      n: trimItems(serp.news, 2),
+      cp: trimItems(serp.competitors, 2),
+      h: trimItems(serp.hiring_signals, 2),
+      p: trimItems(serp.product_signals, 2),
+      sc: trimItems(serp.social_mentions, 3),
       w: {
-        b: (scraper?.blog || []).slice(0, 2),
-        c: (scraper?.careers || []).slice(0, 2),
-        pr: (scraper?.pricing || "").slice(0, 150)
+        b: (scraper?.blog || []).slice(0, 1),
+        c: (scraper?.careers || []).slice(0, 1),
+        pr: (scraper?.pricing || "").slice(0, 50)
       }
     }
   };
@@ -150,96 +77,94 @@ function validateReport(data: unknown, company: string): GTMIntelligenceReport {
     company: raw.company || company,
     generated_at: new Date().toISOString(),
     enrichment: {
-      industry: raw.enrichment?.industry || "Enterprise Tech",
-      website: raw.enrichment?.website || "",
+      industry: raw.enrichment?.ind || "Enterprise Tech",
+      website: raw.enrichment?.web || "",
       hq: raw.enrichment?.hq || "Global",
       size: raw.enrichment?.size || "Unknown",
-      description: raw.enrichment?.description || "Strategic overview unavailable."
+      description: raw.enrichment?.desc || "Strategic overview unavailable."
     },
-    executive_summary: isNonEmptyString(raw.executive_summary) 
-      ? raw.executive_summary 
+    executive_summary: isNonEmptyString(raw.exec) 
+      ? raw.exec 
       : "Summary unavailable due to insufficient source data.",
     competitor_landscape: {
-      summary: raw.competitor_landscape?.summary || "Insufficient evidence for competitor analysis.",
-      confidence: repairConfidence(raw.competitor_landscape?.confidence),
-      competitors: repairList(raw.competitor_landscape?.competitors, (c, i) => ({
-        name: c.name || `Competitor ${i + 1}`,
-        threat_level: c.threat_level || "low",
-        analysis: c.analysis || "No analysis available.",
-        recent_moves: Array.isArray(c.recent_moves) ? c.recent_moves : [],
-        source_title: c.source_title || "",
-        source_url: c.source_url || ""
+      summary: raw.comp?.sum || "Insufficient evidence for competitor analysis.",
+      confidence: "medium",
+      competitors: repairList(raw.comp?.list, (c, i) => ({
+        name: c.n || `Competitor ${i + 1}`,
+        threat_level: c.t === "h" ? "high" : c.t === "m" ? "medium" : "low",
+        analysis: c.a || "No analysis available.",
+        recent_moves: [],
+        source_title: "Search",
+        source_url: c.u || ""
       }))
     },
     social_intelligence: {
-      summary: raw.social_intelligence?.summary || "Social signal analysis unavailable.",
-      sentiment: ["positive", "neutral", "negative"].includes(raw.social_intelligence?.sentiment) 
-        ? raw.social_intelligence.sentiment 
-        : "neutral",
-      signals: repairList(raw.social_intelligence?.signals, (s) => ({
-        platform: s.platform || "unknown",
-        insight: s.insight || "Mention detected.",
-        url: s.url || ""
+      summary: raw.soc?.sum || "Social signal analysis unavailable.",
+      sentiment: raw.soc?.sent === "pos" ? "positive" : raw.soc?.sent === "neg" ? "negative" : "neutral",
+      signals: repairList(raw.soc?.sig, (s) => ({
+        platform: s.p === "li" ? "linkedin" : s.p === "rd" ? "reddit" : s.p === "tw" ? "twitter" : "unknown",
+        insight: s.i || "Mention detected.",
+        url: ""
       }))
     },
     hiring_activity: {
-      summary: raw.hiring_activity?.summary || "Insufficient evidence for hiring activity.",
-      confidence: repairConfidence(raw.hiring_activity?.confidence),
-      signals: repairList(raw.hiring_activity?.signals, (s, i) => ({
-        title: s.title || `Hiring Signal ${i + 1}`,
-        insight: s.insight || "No insight available.",
-        urgency: s.urgency || "low",
-        source_title: s.source_title || "",
-        source_url: s.source_url || ""
+      summary: raw.hire?.sum || "Insufficient evidence for hiring activity.",
+      confidence: "medium",
+      signals: repairList(raw.hire?.sig, (s, i) => ({
+        title: s.t || `Hiring Signal ${i + 1}`,
+        insight: s.i || "No insight available.",
+        urgency: s.u === "h" ? "high" : s.u === "m" ? "medium" : "low",
+        source_title: "Careers",
+        source_url: ""
       }))
     },
     product_activity: {
-      summary: raw.product_activity?.summary || "Insufficient evidence for product activity.",
-      confidence: repairConfidence(raw.product_activity?.confidence),
-      launches: repairList(raw.product_activity?.launches, (l, i) => ({
-        title: l.title || `Product Launch ${i + 1}`,
-        impact: l.impact || "No impact data available.",
-        timing: l.timing || "Timing unknown",
-        source_title: l.source_title || "",
-        source_url: l.source_url || ""
+      summary: raw.prod?.sum || "Insufficient evidence for product activity.",
+      confidence: "medium",
+      launches: repairList(raw.prod?.launch, (l, i) => ({
+        title: l.t || `Product Launch ${i + 1}`,
+        impact: l.i || "No impact data available.",
+        timing: l.time || "Timing unknown",
+        source_title: "News",
+        source_url: ""
       }))
     },
     market_signals: {
-      summary: raw.market_signals?.summary || "Insufficient evidence for market signals.",
-      confidence: repairConfidence(raw.market_signals?.confidence),
-      trends: repairList(raw.market_signals?.trends, (t, i) => ({
-        signal: t.signal || `Market Trend ${i + 1}`,
-        implication: t.implication || "No implication available.",
-        strength: t.strength || "emerging",
-        source_title: t.source_title || "",
-        source_url: t.source_url || ""
+      summary: raw.mkt?.sum || "Insufficient evidence for market signals.",
+      confidence: "medium",
+      trends: repairList(raw.mkt?.trend, (t, i) => ({
+        signal: t.s || `Market Trend ${i + 1}`,
+        implication: t.i || "No implication available.",
+        strength: "emerging",
+        source_title: "Search",
+        source_url: ""
       })),
-      buying_intent: repairList(raw.market_signals?.buying_intent, (b, i) => ({
-        signal: b.signal || `Intent Signal ${i + 1}`,
-        evidence: b.evidence || "No evidence provided.",
-        score: b.score || "low",
-        source_title: b.source_title || "",
-        source_url: b.source_url || ""
+      buying_intent: repairList(raw.mkt?.intent, (b, i) => ({
+        signal: b.s || `Intent Signal ${i + 1}`,
+        evidence: b.e || "No evidence provided.",
+        score: b.score === "h" ? "high" : b.score === "m" ? "medium" : "low",
+        source_title: "Signal",
+        source_url: ""
       }))
     },
-    risks: repairList(raw.risks, (r, i) => ({
-      title: r.title || `Identified Risk ${i + 1}`,
-      description: r.description || "Risk details unavailable.",
-      severity: r.severity || "low",
-      source_title: r.source_title || "",
-      source_url: r.source_url || ""
+    risks: repairList(raw.risk, (r, i) => ({
+      title: r.t || `Identified Risk ${i + 1}`,
+      description: r.d || "Risk details unavailable.",
+      severity: r.s === "h" ? "high" : r.s === "m" ? "medium" : "low",
+      source_title: "Audit",
+      source_url: ""
     })),
-    opportunities: repairList(raw.opportunities, (o, i) => ({
-      title: o.title || `Opportunity ${i + 1}`,
-      description: o.description || "Opportunity details unavailable.",
-      potential: o.potential || "low",
-      source_title: o.source_title || "",
-      source_url: o.source_url || ""
+    opportunities: repairList(raw.opp, (o, i) => ({
+      title: o.t || `Opportunity ${i + 1}`,
+      description: o.d || "Opportunity details unavailable.",
+      potential: o.p === "h" ? "high" : o.p === "m" ? "medium" : "low",
+      source_title: "Audit",
+      source_url: ""
     })),
-    recommended_actions: repairList(raw.recommended_actions, (a) => ({
-      action: a.action || "Recommended Action",
-      priority: a.priority || "short-term",
-      rationale: a.rationale || "Rationale unavailable."
+    recommended_actions: repairList(raw.action, (a) => ({
+      action: a.a || "Recommended Action",
+      priority: "short-term",
+      rationale: "Rationale unavailable."
     }))
   };
 }
@@ -273,14 +198,82 @@ function getFallbackReport(company: string): GTMIntelligenceReport {
   };
 }
 
+function robustParseJSON(content: string): any {
+  let cleaned = content.trim();
+  
+  // 1. Strip markdown markers
+  if (cleaned.includes("```")) {
+    cleaned = cleaned.replace(/```json\n?|```/g, "").trim();
+  }
+
+  try {
+    return JSON.parse(cleaned);
+  } catch (initialError) {
+    console.warn("[Synthesis Audit] Initial JSON parse failed. Attempting robust repair...");
+    
+    // 2. Handle truncation by stripping the tail until we find a comma or start of an object/array
+    // This is a crude but effective way to find a "safe" breaking point in truncated JSON
+    let repaired = cleaned;
+    
+    // Ensure all open strings are closed
+    const quoteCount = (repaired.match(/"/g) || []).length;
+    if (quoteCount % 2 !== 0) {
+      repaired += '"';
+    }
+
+    // Attempt to recursively strip the tail until it parses or we run out of characters
+    // We look for structural markers to trim back to
+    const markers = [",", "{", "[", ":"];
+    let lastMarkerIndex = -1;
+    for (const marker of markers) {
+      lastMarkerIndex = Math.max(lastMarkerIndex, repaired.lastIndexOf(marker));
+    }
+
+    if (lastMarkerIndex !== -1) {
+      // Try stripping back to the last marker and closing structure
+      let candidate = repaired.substring(0, lastMarkerIndex);
+      
+      // Close open structures
+      const openBraces = (candidate.match(/\{/g) || []).length;
+      const closeBraces = (candidate.match(/\}/g) || []).length;
+      if (openBraces > closeBraces) candidate += "}".repeat(openBraces - closeBraces);
+
+      const openBrackets = (candidate.match(/\[/g) || []).length;
+      const closeBrackets = (candidate.match(/\]/g) || []).length;
+      if (openBrackets > closeBrackets) candidate += "]".repeat(openBrackets - closeBrackets);
+
+      try {
+        return JSON.parse(candidate);
+      } catch (e) {
+        // If still fails, try even more aggressive trimming
+      }
+    }
+
+    // Fallback: Simple brace matching as a last resort
+    let simpleRepair = cleaned;
+    const openBraces = (simpleRepair.match(/\{/g) || []).length;
+    const closeBraces = (simpleRepair.match(/\}/g) || []).length;
+    if (openBraces > closeBraces) simpleRepair += "}".repeat(openBraces - closeBraces);
+    
+    try {
+      return JSON.parse(simpleRepair);
+    } catch (e) {
+      throw new Error(`JSON Repair failed. Final tail: ${cleaned.slice(-50)}`);
+    }
+  }
+}
+
 export async function generateGTMReport(
   serp: SerpResearchResults,
-  scraper: WebScraperResults | null
+  scraper: WebScraperResults | null,
+  retryCount = 0
 ): Promise<GTMIntelligenceReport> {
   try {
     const apiKey = getApiKey();
     const payload = buildAnalysisPayload(serp, scraper);
-
+    const payloadJson = JSON.stringify(payload);
+    const promptContext = `Analyze the provided search results and deep-site data for "${serp.company}" and return a GTM Intelligence Report JSON.\n${payloadJson}`;
+    
     const response = await fetch(NVIDIA_NIM_API_URL, {
       method: "POST",
       headers: {
@@ -290,15 +283,14 @@ export async function generateGTMReport(
       body: JSON.stringify({
         model: MODEL,
         messages: [
-          { role: "system", content: SYSTEM_PROMPT },
+          { role: "system", content: retryCount > 0 ? "GTM Strategist: JSON ONLY. Use ultra-short descriptions." : SYSTEM_PROMPT },
           {
             role: "user",
-            content: `Analyze the provided search results and deep-site data for "${serp.company}" and return a GTM Intelligence Report JSON.\n${JSON.stringify(payload, null, 2)}`,
+            content: promptContext,
           },
         ],
-        response_format: { type: "json_object" },
         temperature: 0.1,
-        max_tokens: 4096,
+        max_tokens: 2000,
       }),
       cache: "no-store",
     });
@@ -315,20 +307,24 @@ export async function generateGTMReport(
       throw new Error("NVIDIA NIM returned empty analysis");
     }
 
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(content);
-    } catch (error) {
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        parsed = JSON.parse(jsonMatch[0]);
-      } else {
-        throw new Error("Failed to parse JSON from NVIDIA NIM response");
-      }
+    // FORENSIC LOGGING
+    if (process.env.NODE_ENV === "development") {
+      try {
+        const fs = require("fs");
+        const path = require("path");
+        const logDir = path.join(process.cwd(), "src/scratch/logs");
+        if (!fs.existsSync(logDir)) fs.mkdirSync(logDir, { recursive: true });
+        fs.writeFileSync(path.join(logDir, `${serp.company}_raw_llm.txt`), content);
+      } catch (e) {}
     }
 
+    const parsed = robustParseJSON(content);
     return validateReport(parsed, serp.company);
   } catch (error) {
+    if (retryCount < 1) {
+      console.warn(`[Synthesis] Attempting retry for ${serp.company} due to: ${(error as any).message}`);
+      return generateGTMReport(serp, scraper, retryCount + 1);
+    }
     console.error("[generateGTMReport]", error);
     return getFallbackReport(serp.company);
   }

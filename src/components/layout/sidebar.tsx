@@ -27,7 +27,7 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="flex h-full w-56 flex-col border-r border-white/8 bg-black/40 backdrop-blur-xl">
+    <aside className="relative z-50 flex h-full w-56 flex-col border-r border-white/8 bg-black/40 backdrop-blur-xl">
       <Link href="/dashboard" className="flex items-center gap-2.5 border-b border-white/8 px-4 py-5 hover:bg-white/[0.02] transition-colors">
         <div className="relative flex h-8 w-8 items-center justify-center rounded-lg bg-accent-cyan/20">
           <Zap className="h-4 w-4 text-accent-cyan" />

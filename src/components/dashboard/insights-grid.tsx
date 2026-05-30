@@ -5,6 +5,7 @@ import { AlertTriangle, Lightbulb, Minus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { GlassPanel } from "@/components/ui/glass-panel";
 import { cn } from "@/lib/utils";
+import { useRouter } from "next/navigation";
 
 const impactConfig = {
   opportunity: {
@@ -29,6 +30,7 @@ const impactConfig = {
 
 export function InsightsGrid() {
   const [insights, setInsights] = useState<any[]>([]);
+  const router = useRouter();
 
   useEffect(() => {
     fetch("/api/signals")
@@ -40,7 +42,8 @@ export function InsightsGrid() {
             title: s.title,
             summary: `Detected via ${s.source}. Confidence level ${s.confidence}.`,
             impact: s.type === "hiring" ? "opportunity" : s.type === "product" ? "risk" : "neutral",
-            tags: [s.company, s.type],
+            company: s.company,
+            type: s.type,
             confidence: 85
           })));
         }
@@ -82,14 +85,15 @@ export function InsightsGrid() {
                     {insight.summary}
                   </p>
                   <div className="mt-3 flex flex-wrap items-center gap-2">
-                    {(insight.tags as string[]).map((tag) => (
-                      <span
-                        key={tag}
-                        className="rounded bg-white/5 px-1.5 py-0.5 font-mono text-[10px] text-muted"
-                      >
-                        {tag}
-                      </span>
-                    ))}
+                    <button
+                      onClick={() => router.push(`/companies/${encodeURIComponent(insight.company)}`)}
+                      className="rounded bg-white/5 px-1.5 py-0.5 font-mono text-[10px] text-muted hover:bg-white/10 hover:text-white transition-colors"
+                    >
+                      {insight.company}
+                    </button>
+                    <span className="rounded bg-white/5 px-1.5 py-0.5 font-mono text-[10px] text-muted">
+                      {insight.type}
+                    </span>
                     <span className="ml-auto font-mono text-[10px] text-muted">
                       {insight.confidence}% conf.
                     </span>

@@ -86,7 +86,7 @@ export default function CompanyIntelligencePage() {
   if (loading) {
     return (
       <AppShell title={companyName} subtitle="INTELLIGENCE://loading data">
-        <div className="flex h-screen items-center justify-center text-white/20 font-mono">
+        <div className="flex h-[calc(100vh-10rem)] items-center justify-center text-white/20 font-mono">
           <Zap className="mr-2 h-5 w-5 animate-pulse text-accent-cyan" />
           Synchronizing intelligence nodes...
         </div>
@@ -97,7 +97,7 @@ export default function CompanyIntelligencePage() {
   return (
     <AppShell title={companyName} subtitle="INTELLIGENCE://account detail">
       <div className="mx-auto max-w-7xl p-8">
-        <header className="mb-10 flex items-start justify-between">
+        <header className="relative z-10 mb-10 flex items-start justify-between">
           <div className="flex gap-6">
             <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-white/5 border border-white/10 shadow-2xl">
               <Building2 className="h-10 w-10 text-accent-cyan" />
@@ -133,17 +133,17 @@ export default function CompanyIntelligencePage() {
           <button
             onClick={runResearch}
             disabled={isResearching}
-            className="flex items-center gap-2 rounded-xl bg-accent-cyan px-6 py-3 text-sm font-semibold text-black hover:bg-accent-cyan/90 transition-all shadow-[0_0_20px_rgba(34,211,238,0.2)] disabled:opacity-50"
+            className="relative z-20 flex items-center gap-2 rounded-xl bg-accent-cyan px-6 py-3 text-sm font-semibold text-black hover:bg-accent-cyan/90 transition-all shadow-[0_0_20px_rgba(34,211,238,0.2)] disabled:opacity-50"
           >
             {isResearching ? (
               <>
                 <Zap className="h-4 w-4 animate-spin" />
-                Researching...
+                <span>Researching...</span>
               </>
             ) : (
               <>
                 <Play className="h-4 w-4 fill-current" />
-                Run Intelligence Scan
+                <span>Run Intelligence Scan</span>
               </>
             )}
           </button>

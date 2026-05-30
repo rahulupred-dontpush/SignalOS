@@ -39,7 +39,7 @@ export function CommandPalette() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm"
             onClick={() => setOpen(false)}
           />
           <motion.div
@@ -47,7 +47,7 @@ export function CommandPalette() {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: -20 }}
             transition={{ duration: 0.15 }}
-            className="fixed left-1/2 top-[20%] z-50 w-full max-w-lg -translate-x-1/2 px-4"
+            className="fixed left-1/2 top-[20%] z-[60] w-full max-w-lg -translate-x-1/2 px-4"
           >
             <Command
               className="glass-panel glow-cyan overflow-hidden rounded-xl shadow-2xl"

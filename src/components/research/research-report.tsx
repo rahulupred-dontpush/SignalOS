@@ -106,7 +106,7 @@ export function ResearchReportView({ report, onNewResearch }: ResearchReportView
       transition={{ duration: 0.5 }}
       className="mx-auto max-w-3xl px-6 pb-24 pt-8"
     >
-      <header className="mb-12 flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
+      <header className="relative z-10 mb-12 flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-white/30">
             GTM Intelligence Report

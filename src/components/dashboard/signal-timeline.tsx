@@ -5,9 +5,11 @@ import { useEffect, useState } from "react";
 import { format } from "date-fns";
 import { GlassPanel } from "@/components/ui/glass-panel";
 import { SignalBadge } from "@/components/ui/signal-badge";
+import { useRouter } from "next/navigation";
 
 export function SignalTimeline() {
   const [events, setEvents] = useState<any[]>([]);
+  const router = useRouter();
 
   useEffect(() => {
     fetch("/api/signals")
@@ -47,7 +49,12 @@ export function SignalTimeline() {
             <div className="min-w-0 flex-1 pb-1">
               <div className="flex flex-wrap items-center gap-2">
                 <SignalBadge type={event.type} />
-                <span className="text-xs text-muted">{event.company}</span>
+                <button
+                  onClick={() => router.push(`/companies/${encodeURIComponent(event.company)}`)}
+                  className="text-xs text-muted hover:text-accent-cyan transition-colors"
+                >
+                  {event.company}
+                </button>
               </div>
               <p className="mt-1 text-sm text-foreground/90">{event.label}</p>
             </div>

@@ -7,6 +7,7 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { AnimatePresence, motion } from "framer-motion";
 
 interface Notification {
   id: string;
@@ -87,7 +88,7 @@ export function TopBar({ title, subtitle }: TopBarProps) {
   const unreadCount = notifications.filter(n => !n.read).length;
 
   return (
-    <header className="relative flex h-14 shrink-0 items-center justify-between border-b border-white/8 px-6 bg-black/20 backdrop-blur-sm z-30">
+    <header className="relative flex h-14 shrink-0 items-center justify-between border-b border-white/8 px-6 bg-black/20 backdrop-blur-sm z-50">
       <div>
         <h1 className="text-sm font-semibold tracking-tight">{title}</h1>
         {subtitle && (
@@ -136,52 +137,60 @@ export function TopBar({ title, subtitle }: TopBarProps) {
             )}
           </button>
 
-          {showNotifications && (
-            <div className="absolute right-0 mt-2 w-80 rounded-xl border border-white/10 bg-black/90 p-1 shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in-95 duration-200">
-              <div className="flex items-center justify-between px-3 py-2 border-b border-white/5">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-white/40">Alerts & Signals</p>
-                {unreadCount > 0 && (
-                  <button 
-                    onClick={() => markAsRead()}
-                    className="text-[10px] text-accent-cyan hover:underline"
-                  >
-                    Mark all read
-                  </button>
-                )}
-              </div>
-              <div className="max-h-[320px] overflow-y-auto overflow-x-hidden py-1">
-                {notifications.length === 0 ? (
-                  <div className="py-8 text-center">
-                    <p className="text-xs text-white/20">No active alerts</p>
-                  </div>
-                ) : (
-                  notifications.map((n) => (
-                    <div 
-                      key={n.id} 
-                      onClick={() => handleNotificationClick(n)}
-                      className={cn(
-                        "group relative flex gap-3 px-3 py-3 hover:bg-white/[0.03] transition-colors rounded-lg mx-1 cursor-pointer",
-                        !n.read && "bg-accent-cyan/[0.02]"
-                      )}
+          <AnimatePresence>
+            {showNotifications && (
+              <motion.div 
+                initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                transition={{ duration: 0.15 }}
+                className="absolute right-0 mt-2 w-80 rounded-xl border border-white/10 bg-black/90 p-1 shadow-2xl backdrop-blur-xl z-50 overflow-hidden"
+              >
+                <div className="flex items-center justify-between px-3 py-2 border-b border-white/5">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-white/40">Alerts & Signals</p>
+                  {unreadCount > 0 && (
+                    <button 
+                      onClick={() => markAsRead()}
+                      className="text-[10px] text-accent-cyan hover:underline"
                     >
-                      <div className={cn(
-                        "mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full",
-                        !n.read ? "bg-accent-cyan shadow-[0_0_5px_#22d3ee]" : "bg-white/10"
-                      )} />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between">
-                          <p className="text-xs font-medium text-white/90 leading-normal">{n.title}</p>
-                          {n.reportId && <ExternalLink className="h-2.5 w-2.5 text-white/20 group-hover:text-accent-cyan transition-colors" />}
-                        </div>
-                        <p className="text-[11px] text-white/40 mt-0.5 line-clamp-2">{n.message}</p>
-                        <p className="text-[9px] text-white/20 mt-1.5 font-mono">{format(new Date(n.created_at), "MMM d, HH:mm")}</p>
-                      </div>
+                      Mark all read
+                    </button>
+                  )}
+                </div>
+                <div className="max-h-[320px] overflow-y-auto overflow-x-hidden py-1">
+                  {notifications.length === 0 ? (
+                    <div className="py-8 text-center">
+                      <p className="text-xs text-white/20">No active alerts</p>
                     </div>
-                  ))
-                )}
-              </div>
-            </div>
-          )}
+                  ) : (
+                    notifications.map((n) => (
+                      <div 
+                        key={n.id} 
+                        onClick={() => handleNotificationClick(n)}
+                        className={cn(
+                          "group relative flex gap-3 px-3 py-3 hover:bg-white/[0.03] transition-colors rounded-lg mx-1 cursor-pointer",
+                          !n.read && "bg-accent-cyan/[0.02]"
+                        )}
+                      >
+                        <div className={cn(
+                          "mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full",
+                          !n.read ? "bg-accent-cyan shadow-[0_0_5px_#22d3ee]" : "bg-white/10"
+                        )} />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <p className="text-xs font-medium text-white/90 leading-normal">{n.title}</p>
+                            {n.reportId && <ExternalLink className="h-2.5 w-2.5 text-white/20 group-hover:text-accent-cyan transition-colors" />}
+                          </div>
+                          <p className="text-[11px] text-white/40 mt-0.5 line-clamp-2">{n.message}</p>
+                          <p className="text-[9px] text-white/20 mt-1.5 font-mono">{format(new Date(n.created_at), "MMM d, HH:mm")}</p>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         <div className="relative" ref={profileRef}>
@@ -204,33 +213,44 @@ export function TopBar({ title, subtitle }: TopBarProps) {
             </div>
           </button>
 
-          {showProfile && (
-            <div className="absolute right-0 mt-2 w-56 rounded-xl border border-white/10 bg-black/90 p-1 shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in-95 duration-200">
-              <div className="px-3 py-2 border-b border-white/5 mb-1">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-white/40">Workspace</p>
-                <p className="text-xs text-white mt-1">SignalOS Main</p>
-              </div>
-              <div className="space-y-0.5">
-                <button className="w-full flex items-center gap-3 px-3 py-2 text-xs text-white/70 hover:text-white hover:bg-white/5 rounded-lg transition-colors">
-                  <User className="h-3.5 w-3.5" />
-                  My Profile
-                </button>
-                <button className="w-full flex items-center gap-3 px-3 py-2 text-xs text-white/70 hover:text-white hover:bg-white/5 rounded-lg transition-colors">
-                  <Building className="h-3.5 w-3.5" />
-                  Team Settings
-                </button>
-                <button className="w-full flex items-center gap-3 px-3 py-2 text-xs text-white/70 hover:text-white hover:bg-white/5 rounded-lg transition-colors">
-                  <Settings className="h-3.5 w-3.5" />
-                  System Config
-                </button>
-                <div className="h-px bg-white/5 my-1" />
-                <button className="w-full flex items-center gap-3 px-3 py-2 text-xs text-accent-rose hover:bg-accent-rose/10 rounded-lg transition-colors">
-                  <LogOut className="h-3.5 w-3.5" />
-                  Logout
-                </button>
-              </div>
-            </div>
-          )}
+          <AnimatePresence>
+            {showProfile && (
+              <motion.div 
+                initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                transition={{ duration: 0.15 }}
+                className="absolute right-0 mt-2 w-56 rounded-xl border border-white/10 bg-black/90 p-1 shadow-2xl backdrop-blur-xl z-50 overflow-hidden"
+              >
+                <div className="px-3 py-2 border-b border-white/5 mb-1">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-white/40">Workspace</p>
+                  <p className="text-xs text-white mt-1">SignalOS Main</p>
+                </div>
+                <div className="space-y-0.5">
+                  <button className="w-full flex items-center gap-3 px-3 py-2 text-xs text-white/70 hover:text-white hover:bg-white/5 rounded-lg transition-colors">
+                    <User className="h-3.5 w-3.5" />
+                    My Profile
+                  </button>
+                  <button className="w-full flex items-center gap-3 px-3 py-2 text-xs text-white/70 hover:text-white hover:bg-white/5 rounded-lg transition-colors">
+                    <Building className="h-3.5 w-3.5" />
+                    Team Settings
+                  </button>
+                  <button className="w-full flex items-center gap-3 px-3 py-2 text-xs text-white/70 hover:text-white hover:bg-white/5 rounded-lg transition-colors">
+                    <Settings className="h-3.5 w-3.5" />
+                    System Config
+                  </button>
+                  <div className="h-px bg-white/5 my-1" />
+                  <button 
+                    onClick={() => router.push("/login")}
+                    className="w-full flex items-center gap-3 px-3 py-2 text-xs text-accent-rose hover:bg-accent-rose/10 rounded-lg transition-colors"
+                  >
+                    <LogOut className="h-3.5 w-3.5" />
+                    Logout
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
     </header>

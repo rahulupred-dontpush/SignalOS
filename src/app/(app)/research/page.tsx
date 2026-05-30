@@ -97,7 +97,7 @@ export default function ResearchPage() {
     }
   }, [fetchDone, workflowDone, error, report]);
 
-  const isCentered = phase === "idle" || phase === "workflow" || phase === "error";
+  const isCentered = phase === "idle" || phase === "error";
 
   return (
     <ResearchShell minimal={phase === "report"}>
@@ -105,7 +105,7 @@ export default function ResearchPage() {
         className={
           isCentered
             ? "flex min-h-[calc(100vh-3.5rem)] flex-col items-center justify-center"
-            : ""
+            : "mx-auto max-w-3xl px-6 pt-8"
         }
       >
         <AnimatePresence mode="wait">
@@ -129,7 +129,7 @@ export default function ResearchPage() {
               key="workflow"
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="w-full"
+              className="w-full py-12"
             >
               <ResearchWorkflow
                 company={query.trim()}
